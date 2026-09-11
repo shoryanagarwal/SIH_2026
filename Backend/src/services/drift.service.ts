@@ -1,5 +1,3 @@
-
-
 import {
   ParsedComponent,
   ParamName,
@@ -33,7 +31,7 @@ function computeSingleParamDrift(values: number[]): SingleParamDrift {
   const slope_24_48 = delta_24_48 / (STAGE_HOURS[2] - STAGE_HOURS[1]);
   const slope_48_96 = delta_48_96 / (STAGE_HOURS[3] - STAGE_HOURS[2]);
 
-  // Guard against 
+  // Guard against
   const percentage_change =
     v0 !== 0 ? ((v96 - v0) / Math.abs(v0)) * 100 : v96 !== 0 ? 100 : 0;
 
@@ -76,7 +74,7 @@ function classifyTrend(input: {
   const deltas = [delta_0_24, delta_24_48, delta_48_96];
   const scale = Math.max(Math.abs(startValue), 1e-9); // guards against divide-by-zero near 0
 
- 
+
   const totalChange = Math.abs(delta_0_24 + delta_24_48 + delta_48_96);
   const totalChangeRatio = totalChange / scale;
   const noSignFlipInDeltas = deltas.every((d) => Math.sign(d) === Math.sign(deltas[0]) || d === 0);
@@ -84,7 +82,7 @@ function classifyTrend(input: {
     return "STABLE";
   }
 
-  // --- 2. INTERMITTENT_INSTABILITY 
+  // --- 2. INTERMITTENT_INSTABILITY
   const signs = deltas.map((d) => (Math.abs(d) / scale < 0.02 ? 0 : Math.sign(d)));
   const nonZeroSigns = signs.filter((s) => s !== 0);
   const hasSignFlip = nonZeroSigns.some((s, i) => i > 0 && s !== nonZeroSigns[i - 1]);
@@ -92,14 +90,14 @@ function classifyTrend(input: {
     return "INTERMITTENT_INSTABILITY";
   }
 
-  // --- 3. ACCELERATING 
+  // --- 3. ACCELERATING
   const sameDirection = Math.sign(slope_0_24) === Math.sign(slope_48_96) && slope_0_24 !== 0;
   const isAccelerating = sameDirection && Math.abs(slope_48_96) >= Math.abs(slope_0_24) * 1.8;
   if (isAccelerating) {
     return "ACCELERATING";
   }
 
-  // --- 4. SLOW_DEGRADATION 
+  // --- 4. SLOW_DEGRADATION
   return "SLOW_DEGRADATION";
 }
 
@@ -117,10 +115,19 @@ export function computeDrift(component: ParsedComponent): DriftResult {
   const primary = perParam[PRIMARY_DRIFT_PARAM];
 
   
-  const magnitudeComponent = Math.min(Math.abs(primary.percentage_change), 200) / 2; // caps at 100
+  const v0 = component[PRIMARY_DRIFT_PARAM][0];
+  const v96 = component[PRIMARY_DRIFT_PARAM][3];
+  const safeV0 = Math.abs(v0) < 1e-9 ? 1e-9 : v0; // guard divide-by-zero/near-zero start values
+  const logRatio = Math.log2(Math.abs(v96 / safeV0));
+
+  
+  const LOG_RATIO_SCALE = 100 / 6;
+  const magnitudeComponent = Math.min(Math.abs(logRatio) * LOG_RATIO_SCALE, 100);
+
   const accelerationBonus =
     primary.trend === "ACCELERATING" ? 20 : primary.trend === "INTERMITTENT_INSTABILITY" ? 10 : 0;
   const score = Math.max(0, Math.min(100, magnitudeComponent + accelerationBonus));
+  // --- END FIX ---
 
   return {
     score: Math.round(score * 100) / 100,
@@ -129,7 +136,7 @@ export function computeDrift(component: ParsedComponent): DriftResult {
     deltas: primary.deltas,
     slopes: primary.slopes,
     drift_acceleration: primary.drift_acceleration,
-    // Populated by lot.service.ts 
+    // Populated by lot.service.ts
     deviation_from_lot_trajectory: 0,
   };
 }
