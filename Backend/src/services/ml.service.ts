@@ -8,7 +8,7 @@ import {
 } from "../types/screening.types.js";
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8001";
-const ML_SERVICE_TIMEOUT_MS = Number(process.env.ML_SERVICE_TIMEOUT_MS || 15000);
+const ML_SERVICE_TIMEOUT_MS = Number(process.env.ML_SERVICE_TIMEOUT_MS || 120000);
 
 const client: AxiosInstance = axios.create({
   baseURL: ML_SERVICE_URL,
