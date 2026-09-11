@@ -7,154 +7,80 @@ import ModelPerformance from "../components/modelPerformance.jsx";
 import BatchSummary from "../components/batchSummary.jsx";
 import StatCard from "../components/StatCard.jsx"
 import Header from "../components/Header.jsx";
+import  { useEffect, useState } from "react";
 
+
+import {
+  getScreeningHistory,
+  getScreeningById,
+} from "../api/screening.api.js";
 
 function Dashboard() {
-  const anomalyDriftData = [
-  {
-    hour: "0h",
-    anomalyScore: 1.2,
-    predictedDrift: 0.0008,
-  },
-  {
-    hour: "24h",
-    anomalyScore: 1.5,
-    predictedDrift: 0.0011,
-  },
-  {
-    hour: "48h",
-    anomalyScore: 1.8,
-    predictedDrift: 0.0015,
-  },
-  {
-    hour: "96h",
-    anomalyScore: 2.4,
-    predictedDrift: 0.0022,
-  },
-  {
-    hour: "168h",
-    anomalyScore: 3.1,
-    predictedDrift: 0.0030,
-  },
-  {
-    hour: "220h",
-    anomalyScore: 2.8,
-    predictedDrift: 0.0027,
-  },
-  {
-    hour: "250h",
-    anomalyScore: 4.2,
-    predictedDrift: 0.0038,
-  },
-  {
-    hour: "320h",
-    anomalyScore: 4.8,
-    predictedDrift: 0.0046,
-  },
-  {
-    hour: "380h",
-    anomalyScore: 6.1,
-    predictedDrift: 0.0058,
-  },
-  {
-    hour: "440h",
-    anomalyScore: 7.4,
-    predictedDrift: 0.0069,
-  },
-  {
-    hour: "520h",
-    anomalyScore: 8.6,
-    predictedDrift: 0.0078,
-  },
-  {
-    hour: "600h",
-    anomalyScore: 10.2,
-    predictedDrift: 0.0091,
-  },
-];
 
-const screeningStatusData = [
-  {
-    name: "Normal",
-    value: 4120,
-  },
-  {
-    name: "Suspicious",
-    value: 326,
-  },
-  {
-    name: "High Risk",
-    value: 554,
-  },
-];
+  const [analysis, setAnalysis] = useState(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
 
-const screeningData = [
-  {
-    componentId: "CMP-0001",
-    lotId: "LOT-01",
-    anomalyScore: 1.82,
-    predictedDrift: 0.0014,
-    risk: "LOW",
-    status: "NORMAL",
-  },
-  {
-    componentId: "CMP-0042",
-    lotId: "LOT-01",
-    anomalyScore: 3.91,
-    predictedDrift: 0.0038,
-    risk: "MEDIUM",
-    status: "FLAGGED",
-  },
-  {
-    componentId: "CMP-0127",
-    lotId: "LOT-02",
-    anomalyScore: 5.24,
-    predictedDrift: 0.0061,
-    risk: "HIGH",
-    status: "FLAGGED",
-  },
-  {
-    componentId: "CMP-0214",
-    lotId: "LOT-03",
-    anomalyScore: 1.35,
-    predictedDrift: 0.0011,
-    risk: "LOW",
-    status: "NORMAL",
-  },
-];
-const modelPerformanceData = [
-  {
-    title: "Anomaly Detection F1",
-    value: "0.96",
-    label: "Excellent",
-    progress: 96,
-  },
-  {
-    title: "Drift Prediction MAE",
-    value: "0.0479 V",
-    label: "Low Error",
-    progress: 92,
-  },
-  {
-    title: "False Negative Rate",
-    value: "0.42%",
-    label: "Very Low",
-    progress: 99,
-  },
-  {
-    title: "Explainability Score",
-    value: "0.92",
-    label: "High",
-    progress: 92,
-  },
-];
-const batchSummaryData = {
-  totalBatches: 50,
-  componentsScreened: 5000,
-  parametersTracked: 3,
-  timePoints: "0h, 24h, 48h, 96h, 168h",
-};
+
+ useEffect(() => {
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const historyResponse = await getScreeningHistory();
+
+      const analyses = historyResponse.analyses || [];
+
+      if (analyses.length === 0) {
+        setAnalysis(null);
+        return;
+      }
+
+      // history is already sorted latest first
+      const latestAnalysisId = analyses[0].analysis_id;
+
+      const detailResponse = await getScreeningById(latestAnalysisId);
+
+      setAnalysis(detailResponse.analysis || null);
+
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+      setError(error.message || "Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadDashboard();
+}, []);
+
+const anomalyDriftData = analysis?.chart_data || [];
+
+const screeningStatusData = analysis?.distribution || [];
+
+const screeningData = analysis?.components || [];
+
+const modelPerformanceData = analysis?.model_performance || [];
+
+const batchSummaryData = analysis?.batch || {
+  totalBatches: 0,
+  componentsScreened: 0,
+  parametersTracked: 0,
+  timePoints: "",
+};  
+
+
+
+
+
+
+
   return (
+
+    
+
+
     <div
       className="min-h-screen bg-cover bg-center bg-fixed text-white"
       style={{
@@ -172,6 +98,10 @@ const batchSummaryData = {
   <Header />
 
 
+
+
+
+
         {/* Dashboard Heading */}
         <section className="mt-8">
 
@@ -183,44 +113,39 @@ const batchSummaryData = {
             Monitor component health, anomalies and predicted degradation.
           </p>
 
+
+
+          {loading && (
+  <div className="mt-8 rounded-xl border border-slate-700 p-6 text-center text-slate-400">
+    Loading screening analysis...
+  </div>
+)}
+
+{error && (
+  <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center text-red-400">
+    {error}
+  </div>
+)}
+
+{!loading && !error && !analysis && (
+  <div className="mt-8 rounded-xl border border-slate-700 p-6 text-center text-slate-400">
+    No screening analysis available yet.
+  </div>
+)}
+
         </section>
         {/* KPI Cards */}
 <section className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
 
-  <StatCard
-    title="Total Components"
-    value="5,000"
-    percentage="8.2% screened"
-    type="blue"
-  />
-
-  <StatCard
-    title="Normal"
-    value="4,120"
-    percentage="82.4%"
-    type="green"
-  />
-
-  <StatCard
-    title="Suspicious"
-    value="326"
-    percentage="6.5%"
-    type="yellow"
-  />
-
-  <StatCard
-    title="High Risk"
-    value="554"
-    percentage="11.1%"
-    type="red"
-  />
-
-  <StatCard
-    title="Anomaly Rate"
-    value="11.7%"
-    percentage="↑ 2.4%"
-    type="purple"
-  />
+  {analysis?.stat_cards?.map((card) => (
+    <StatCard
+      key={card.title}
+      title={card.title}
+      value={card.value}
+      percentage={card.percentage}
+      type={card.type}
+    />
+  ))}
 </section> 
 <section className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-2">
 

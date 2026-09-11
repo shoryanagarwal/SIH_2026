@@ -1,39 +1,49 @@
 import { useState } from "react";
 import DataUpload from "./dataUpload.jsx";
+import { useNavigate } from "react-router-dom";
+
+
 
 function QuickActions() {
   const [showUpload, setShowUpload] = useState(false);
-
+  const navigate = useNavigate();
   const actions = [
-    {
-      title: "Upload Data",
-      description: "CSV / Excel / JSON",
-      icon: "↑",
-      type: "upload",
-    },
-    {
-      title: "Run Screening",
-      description: "Analyze new batch",
-      icon: "▶",
-      type: "screening",
-    },
-    {
-      title: "Generate Report",
-      description: "Download results",
-      icon: "▣",
-      type: "report",
-    },
-    {
-      title: "Model Insights",
-      description: "View model performance",
-      icon: "✦",
-      type: "insights",
-    },
-  ];
+  {
+    title: "Upload Data",
+    description: "Upload CSV file",
+    icon: "↑",
+    type: "upload",
+  },
+  {
+    title: "Generate Report",
+    description: "AI-powered report",
+    icon: "▣",
+    type: "report",
+  },
+  {
+    title: "Model Insights",
+    description: "View model performance",
+    icon: "✦",
+    type: "insights",
+  },
+  {
+    title: "History",
+    description: "View previous screenings",
+    icon: "◷",
+    type: "history",
+  },
+];
 
-  const handleAction = (type) => {
-    console.log(`Quick Action: ${type}`);
-  };
+
+
+ const handleAction = (type) => {
+  if (type === "history") {
+    navigate("/history");
+    return;
+  }
+
+  console.log(`Quick Action: ${type}`);
+};
 
   return (
     <>
@@ -119,6 +129,7 @@ function QuickActions() {
           onClose={() => setShowUpload(false)}
         />
       )}
+     
     </>
   );
 }

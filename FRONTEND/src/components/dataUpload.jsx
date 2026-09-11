@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { analyzeCsv } from "../api/screening.api.js";
 
 function DataUpload({ onClose }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  const allowedExtensions = [".csv", ".xlsx", ".xls", ".json"];
-
+const allowedExtensions = [".csv"];
   const handleFileChange = (event) => {
     const file = event.target.files[0];
 
@@ -28,17 +29,38 @@ function DataUpload({ onClose }) {
     setError("");
   };
 
-  const handleUpload = () => {
-    if (!selectedFile) {
-      setError("Please select a file first.");
-      return;
+  const handleUpload = async () => {
+  if (!selectedFile) {
+    setError("Please select a file first.");
+    return;
+  }
+
+  try {
+    setUploading(true);
+    setError("");
+
+    console.log("Uploading:", selectedFile.name);
+
+    const response = await analyzeCsv(selectedFile);
+
+    console.log("Screening analysis:", response);
+
+    if (!response.success) {
+      throw new Error("Screening analysis failed.");
     }
 
-    console.log("Ready to upload:", selectedFile.name);
+    onClose();
 
-    // Backend API will be connected here later.
-  };
+    // Refresh page so Dashboard loads latest analysis
+    window.location.reload();
 
+  } catch (error) {
+    console.error("Upload failed:", error);
+    setError(error.message || "Failed to analyze file.");
+  } finally {
+    setUploading(false);
+  }
+};
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
 
@@ -73,7 +95,7 @@ function DataUpload({ onClose }) {
         >
           <input
             type="file"
-            accept=".csv,.xlsx,.xls,.json"
+            accept=".csv"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -87,7 +109,7 @@ function DataUpload({ onClose }) {
           </p>
 
           <p className="mt-2 text-xs text-slate-500">
-            CSV, XLSX, XLS or JSON
+            CSV
           </p>
         </label>
 
@@ -136,12 +158,14 @@ function DataUpload({ onClose }) {
 
           <button
             onClick={handleUpload}
+            disabled={uploading}
             className="rounded-lg bg-blue-600
             px-5 py-2 text-sm font-medium text-white
-            transition hover:bg-blue-500"
+            transition hover:bg-blue-500
+            disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Upload Data
-          </button>
+            {uploading ? "Analyzing..." : "Upload Data"}
+        </button>
 
         </div>
 

@@ -3,17 +3,23 @@
 import apiClient from "./client.js";
 
 function normalizeError(error) {
+  const data = error.response?.data;
+
   const message =
-    error.response?.data?.message ||
-    error.response?.data?.error ||
+    data?.error?.message ||
+    data?.message ||
+    (typeof data?.error === "string" ? data.error : null) ||
     error.message ||
     "Something went wrong";
+
   const normalized = new Error(message);
+
   normalized.status = error.response?.status;
+  normalized.code = data?.error?.code;
   normalized.original = error;
+
   return normalized;
 }
-
 
 export async function getHealth() {
   try {
