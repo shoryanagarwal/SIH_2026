@@ -346,7 +346,7 @@ export function buildModelPerformance(): ModelPerformanceEntry[] {
 // ------------------------------------------------------------------
 
 function buildBatchSummary(results: ComponentAnalysisResult[]): BatchSummaryData {
-  const uniqueLots = new Set(results.map((r) => r.component.lot_id));
+  // const uniqueLots = new Set(results.map((r) => r.component.lot_id));
 
   return {
     totalBatches: 1, // one CSV upload == one batch, per this pipeline

@@ -11,15 +11,13 @@ import {
   FrontendStatus,
   FrontendDistributionLabel,
 } from "../types/screening.types.js";
-import { LotBaseline, computeLotDeviationScore, lotDeviationReason } from "./lot.service.js";
 import { secondaryDriftReasons } from "./drift.service.js";
 
 // Configurable per spec Section 13 ("keep the weights configurable")
 export const RISK_WEIGHTS = {
-  anomaly: 0.35,
-  drift: 0.3,
+  anomaly: 0.4,
+  drift: 0.35,
   prediction: 0.25,
-  lotDeviation: 0.1,
 };
 
 const DECISION_THRESHOLDS = { review: 40, earlyReject: 70 };
@@ -51,13 +49,13 @@ export function computeRiskScore(
   anomalyScore: number,
   driftScore: number,
   predictionRisk: number,
-  lotDeviationScore: number
+  
 ): number {
   const score =
     anomalyScore * RISK_WEIGHTS.anomaly +
     driftScore * RISK_WEIGHTS.drift +
-    predictionRisk * RISK_WEIGHTS.prediction +
-    lotDeviationScore * RISK_WEIGHTS.lotDeviation;
+    predictionRisk * RISK_WEIGHTS.prediction ;
+    
 
   return Math.max(0, Math.min(100, Math.round(score * 100) / 100));
 }
@@ -112,10 +110,10 @@ function buildReasons(params: {
   predictionRisk: number;
   predicted168hLeakage: number;
   component: ParsedComponent;
-  lotBaselines: Map<string, LotBaseline>;
+  // lotBaselines: Map<string, LotBaseline>;
   decision: RiskDecision;
 }): string[] {
-  const { anomaly, drift, predictionRisk, predicted168hLeakage, component, lotBaselines, decision } =
+  const { anomaly, drift, predictionRisk, predicted168hLeakage , component , decision } =
     params;
 
   const reasons: string[] = [];
@@ -126,10 +124,10 @@ function buildReasons(params: {
     );
   }
 
-  const lotReason = lotDeviationReason(component, lotBaselines);
-  if (lotReason) {
-    reasons.push(lotReason);
-  }
+  // const lotReason = lotDeviationReason(component, lotBaselines);
+  // if (lotReason) {
+  //   reasons.push(lotReason);
+  // }
 
   if (drift.trend === "ACCELERATING") {
     reasons.push(
@@ -166,14 +164,14 @@ export function computeRisk(params: {
   anomaly: MlAnomalyResponse;
   prediction: MlPredict168Response;
   drift: DriftResult;
-  lotBaselines: Map<string, LotBaseline>;
+  
 }): RiskResult {
-  const { component, anomaly, prediction, drift, lotBaselines } = params;
+  const { component, anomaly, prediction, drift} = params;
 
-  const lotDeviationScore = computeLotDeviationScore(component, lotBaselines);
+  
   const predictionRisk = computePredictionRisk(component, prediction);
 
-  const score = computeRiskScore(anomaly.anomaly_score, drift.score, predictionRisk, lotDeviationScore);
+  const score = computeRiskScore(anomaly.anomaly_score, drift.score, predictionRisk );
   const decision = decisionFromScore(score);
   const { frontend_risk, frontend_status, distribution_label } = mapDecisionToFrontend(decision);
 
@@ -183,7 +181,6 @@ export function computeRisk(params: {
     predictionRisk,
     predicted168hLeakage: prediction.predicted_168h.Leakage,
     component,
-    lotBaselines,
     decision,
   });
 

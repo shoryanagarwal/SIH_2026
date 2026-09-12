@@ -136,7 +136,7 @@ export function computeDrift(component: ParsedComponent): DriftResult {
     deltas: primary.deltas,
     slopes: primary.slopes,
     drift_acceleration: primary.drift_acceleration,
-    // Populated by lot.service.ts
+    
     deviation_from_lot_trajectory: 0,
   };
 }

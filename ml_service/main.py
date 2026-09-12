@@ -1,5 +1,3 @@
-
-
 import os
 import sys
 from pathlib import Path
@@ -30,7 +28,6 @@ Y_SCALER_PATH = DL_ROOT / "y_scaler.pkl"
 LEAKAGE_LOG_PARAMS_PATH = DL_ROOT / "leakage_log_params.pkl"
 
 
-APPLY_LEAKAGE_LOG_INVERSE = os.environ.get("APPLY_LEAKAGE_LOG_INVERSE", "false").lower() == "true"
 
 # Index of "Leakage" within the 4 predictor parameters. Used to apply the log-inverse transform if requested.
 PARAM_ORDER = ["Temperature", "VCE", "Leakage", "Breakdown"]
@@ -79,8 +76,7 @@ if LEAKAGE_LOG_PARAMS_PATH.exists():
     _leakage_log_params = joblib.load(LEAKAGE_LOG_PARAMS_PATH)
 
 print(f"[ml_service] LSTM loaded from {LSTM_MODEL_FILENAME}. "
-      f"Leakage log-inverse: {'ON' if APPLY_LEAKAGE_LOG_INVERSE else 'OFF'}.")
-
+      f"Leakage log-inverse: {'ON' if _leakage_log_params is not None else 'OFF'}.")
 
 
 
@@ -139,7 +135,14 @@ def anomaly(payload: ComponentInput):
     anomaly_score_raw = float(-_if_pipeline.decision_function(features_df)[0])
     prediction = _if_pipeline.predict(features_df)[0]
 
-    display_score = max(0.0, min(100.0, anomaly_score_raw * 100))
+    # --- CHANGED: calibrated linear scale instead of the blind raw*100 ---
+    # NOT YET VERIFIED against your real data's actual raw-score range.
+    # Confirm by POSTing several real components to this endpoint and
+    # checking anomaly_score_raw actually falls inside [-0.05, 0.10]
+    # before trusting this in a demo.
+    display_score = 100 / (1 + np.exp(-40 * (anomaly_score_raw - 0.01)))
+    # --- END CHANGE ---
+
     status = "NORMAL" if prediction == 1 else "HIGH ANOMALY"
 
     return {
@@ -186,12 +189,9 @@ def predict168(payload: ComponentInput):
     # Leakage cannot be negative
     prediction[:, LEAKAGE_INDEX] = np.maximum(prediction[:, LEAKAGE_INDEX], 0)
 
-    if APPLY_LEAKAGE_LOG_INVERSE and _leakage_log_params is not None:
-        
-        offset = _leakage_log_params.get("offset", 0) if isinstance(_leakage_log_params, dict) else 0
-        prediction[:, LEAKAGE_INDEX] = np.expm1(prediction[:, LEAKAGE_INDEX]) - offset
-        prediction[:, LEAKAGE_INDEX] = np.maximum(prediction[:, LEAKAGE_INDEX], 0)
-
+    prediction[:, LEAKAGE_INDEX] = np.maximum(
+    prediction[:, LEAKAGE_INDEX], 0
+)
     values_168h = {param: float(prediction[0, idx]) for idx, param in enumerate(PARAM_ORDER)}
 
     return {

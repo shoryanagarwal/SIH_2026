@@ -6,7 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 import { parseCsvBuffer, CsvValidationError } from "../services/csv.service.js";
 import { analyzeComponentMl, pingMlService, MlServiceError } from "../services/ml.service.js";
 import { computeDrift } from "../services/drift.service.js";
-import { computeLotBaselines, computeGlobalBaseline, getLotRiskLevel } from "../services/lot.service.js";
+// import { computeLotBaselines, computeGlobalBaseline, getLotRiskLevel } from "../services/lot.service.js";
 import { computeRisk } from "../services/risk.service.js";
 import { assembleAnalysis, buildModelPerformance, ComponentAnalysisResult } from "../services/response.service.js";
 import { saveAnalysis, listAnalyses, getAnalysisById } from "../services/history.service.js";
@@ -59,11 +59,11 @@ function uploadCsvToCloudinary(file: Express.Multer.File): Promise<{ secure_url:
 
 async function analyzeComponent(
   component: ParsedComponent,
-  lotBaselines: ReturnType<typeof computeLotBaselines>
+  // lotBaselines: ReturnType<typeof computeLotBaselines>
 ): Promise<ComponentAnalysisResult> {
   const { anomaly, prediction } = await analyzeComponentMl(component);
   const drift = computeDrift(component);
-  const risk = computeRisk({ component, anomaly, prediction, drift, lotBaselines });
+  const risk = computeRisk({ component, anomaly, prediction, drift });
 
   return { component, anomaly, prediction, drift, risk };
 }
@@ -85,14 +85,14 @@ export async function analyzeScreening(req: Request, res: Response, next: NextFu
     ]);
 
    
-    const lotBaselines = computeLotBaselines(components);
+    // const lotBaselines = computeLotBaselines(components);
     
-    const globalBaseline = computeGlobalBaseline(components);
-    void getLotRiskLevel; // referenced to avoid an unused-import lint error until it's wired in
-    void globalBaseline;
+    // const globalBaseline = computeGlobalBaseline(components);
+    // void getLotRiskLevel; // referenced to avoid an unused-import lint error until it's wired in
+    // void globalBaseline;
 
     const results = await Promise.all(
-      components.map((component) => analyzeComponent(component, lotBaselines))
+      components.map((component) => analyzeComponent(component))
     );
 
     const assembled = assembleAnalysis(results);
