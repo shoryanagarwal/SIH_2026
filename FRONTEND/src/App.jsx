@@ -5,6 +5,7 @@ import About from "./pages/about.jsx";
 import Features from "./pages/features.jsx";
 import History from "./components/history.jsx";
 import HistoryDetails from "./components/HistoryDetails.jsx";
+import ModelInsights from "./components/ModelInsights.jsx";
 
 
 function App() {
@@ -25,6 +26,11 @@ function App() {
           path="/history/:id"
           element={<HistoryDetails />}
         />
+
+        <Route
+  path="/model-insights"
+  element={<ModelInsights />}
+/>
 
       </Routes>
 

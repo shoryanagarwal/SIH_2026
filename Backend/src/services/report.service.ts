@@ -265,22 +265,39 @@ function renderReportToPdf(
     // HELPERS
     // =================================================
 
+    // NOTE: PDFKit remembers the last x/y you passed to `.text()`
+    // as the new cursor position for any *following* `.text()` call
+    // that doesn't specify its own x. Several helpers below (table
+    // cells, summary cards) draw with an explicit x far from the
+    // left margin. Without resetting `doc.x` back to LEFT afterward,
+    // every subsequent unpositioned `.text()` call inherits that
+    // offset and drifts (or runs) off the right edge of the page.
+    // Fix: always reset `doc.x = LEFT` before/after such draws.
+
+    function resetCursorX() {
+      doc.x = LEFT;
+    }
+
     function ensureSpace(height: number) {
       if (doc.y + height > 735) {
         doc.addPage();
       }
+      // A fresh page also resets doc.x correctly, but be defensive
+      resetCursorX();
     }
 
     function sectionTitle(title: string) {
       ensureSpace(45);
+      resetCursorX();
 
       doc
         .font("Helvetica-Bold")
         .fontSize(14)
         .fillColor(DARK)
-        .text(title);
+        .text(title, LEFT, doc.y, { width: CONTENT_WIDTH });
 
       doc.moveDown(0.25);
+      resetCursorX();
 
       doc
         .moveTo(LEFT, doc.y)
@@ -290,6 +307,7 @@ function renderReportToPdf(
         .stroke();
 
       doc.moveDown(0.6);
+      resetCursorX();
 
       doc.font("Helvetica");
     }
@@ -298,19 +316,26 @@ function renderReportToPdf(
       label: string,
       value: string
     ) {
+      resetCursorX();
+
       doc
         .font("Helvetica-Bold")
         .fontSize(8)
         .fillColor(MUTED)
-        .text(label.toUpperCase());
+        .text(label.toUpperCase(), LEFT, doc.y, {
+          width: CONTENT_WIDTH,
+        });
+
+      resetCursorX();
 
       doc
         .font("Helvetica")
         .fontSize(10)
         .fillColor(TEXT)
-        .text(value);
+        .text(value, LEFT, doc.y, { width: CONTENT_WIDTH });
 
       doc.moveDown(0.4);
+      resetCursorX();
     }
 
     function drawSummaryCard(
@@ -380,6 +405,7 @@ function renderReportToPdf(
       }
 
       doc.y = y + 26;
+      resetCursorX(); // <-- was missing: cursor was left at the last column's x
     }
 
     function drawTableRow(
@@ -429,6 +455,7 @@ function renderReportToPdf(
         .stroke();
 
       doc.y = y + rowHeight;
+      resetCursorX(); // <-- was missing: cursor was left at the last cell's x
     }
 
     function extractSection(
@@ -465,13 +492,18 @@ function renderReportToPdf(
     // HEADER
     // =================================================
 
+    resetCursorX();
+
     doc
       .font("Helvetica-Bold")
       .fontSize(25)
       .fillColor(DARK)
-      .text("TRACE-X AI", {
+      .text("TRACE-X AI", LEFT, doc.y, {
+        width: CONTENT_WIDTH,
         align: "center",
       });
+
+    resetCursorX();
 
     doc
       .font("Helvetica")
@@ -479,12 +511,16 @@ function renderReportToPdf(
       .fillColor(MUTED)
       .text(
         "Predictive Burn-In Reliability Screening",
+        LEFT,
+        doc.y,
         {
+          width: CONTENT_WIDTH,
           align: "center",
         }
       );
 
     doc.moveDown(1);
+    resetCursorX();
 
     doc
       .moveTo(LEFT, doc.y)
@@ -494,14 +530,18 @@ function renderReportToPdf(
       .stroke();
 
     doc.moveDown(1);
+    resetCursorX();
 
     doc
       .font("Helvetica-Bold")
       .fontSize(18)
       .fillColor(DARK)
-      .text("BURN-IN SCREENING REPORT");
+      .text("BURN-IN SCREENING REPORT", LEFT, doc.y, {
+        width: CONTENT_WIDTH,
+      });
 
     doc.moveDown(0.8);
+    resetCursorX();
 
     // =================================================
     // REPORT INFORMATION
@@ -526,7 +566,7 @@ function renderReportToPdf(
 
     drawLabelValue(
       "Time Points",
-      analysis.batch.timePoints
+      String(analysis.batch.timePoints)
     );
 
     // =================================================
@@ -585,6 +625,7 @@ function renderReportToPdf(
     );
 
     doc.y = cardY + 75;
+    resetCursorX(); // <-- was missing: cursor was left inside the last card
 
     // =================================================
     // BATCH RISK OVERVIEW
@@ -599,16 +640,19 @@ function renderReportToPdf(
     );
 
     if (overview) {
+      resetCursorX();
+
       doc
         .font("Helvetica")
         .fontSize(10)
         .fillColor(TEXT)
-        .text(overview, {
+        .text(overview, LEFT, doc.y, {
           width: CONTENT_WIDTH,
           lineGap: 4,
         });
 
       doc.moveDown(0.8);
+      resetCursorX();
     }
 
     // =================================================
@@ -714,6 +758,7 @@ function renderReportToPdf(
     });
 
     doc.moveDown(0.8);
+    resetCursorX();
 
     // =================================================
     // FLAGGED COMPONENTS
@@ -725,12 +770,17 @@ function renderReportToPdf(
       getFlaggedComponents(analysis);
 
     if (flaggedComponents.length === 0) {
+      resetCursorX();
+
       doc
         .font("Helvetica")
         .fontSize(10)
         .fillColor(TEXT)
         .text(
-          "No components were flagged in this screening."
+          "No components were flagged in this screening.",
+          LEFT,
+          doc.y,
+          { width: CONTENT_WIDTH }
         );
     } else {
       const componentColumns = [
@@ -803,6 +853,8 @@ function renderReportToPdf(
       );
     }
 
+    resetCursorX();
+
     // =================================================
     // AI RELIABILITY ASSESSMENT
     // =================================================
@@ -831,15 +883,19 @@ function renderReportToPdf(
       .join("\n\n");
 
     if (assessmentText) {
+      resetCursorX();
+
       doc
         .font("Helvetica")
         .fontSize(10)
         .fillColor(TEXT)
-        .text(assessmentText, {
+        .text(assessmentText, LEFT, doc.y, {
           width: CONTENT_WIDTH,
           lineGap: 4,
         });
     }
+
+    resetCursorX();
 
     // =================================================
     // RECOMMENDED ACTIONS
@@ -869,17 +925,19 @@ function renderReportToPdf(
 
       lines.forEach((line) => {
         ensureSpace(30);
+        resetCursorX();
 
         doc
           .font("Helvetica")
           .fontSize(10)
           .fillColor(TEXT)
-          .text(line, {
+          .text(line, LEFT, doc.y, {
             width: CONTENT_WIDTH,
             lineGap: 3,
           });
 
         doc.moveDown(0.4);
+        resetCursorX();
       });
     }
 
