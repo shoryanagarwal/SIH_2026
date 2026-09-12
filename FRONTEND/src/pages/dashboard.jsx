@@ -165,16 +165,7 @@ const batchSummaryData = analysis?.batch || {
   </div>
 
 
-  {/* Screening Distribution */}harshsr+   59868    2743  0 00:33 ?        00:00:00 /home/harshsrivastava/.local/share/npc-forge/venv/bin/python3 /home/harshsrivastava/.local/share/npc-forge/server.py
-harshsrivastava@fedora:~/sih/SIH_2026/Backend$ kill 59868 
-harshsrivastava@fedora:~/sih/SIH_2026/Backend$ sudo lsof -i :5000 
-COMMAND   PID            USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
-python3 60215 harshsrivastava    4u  IPv4 493929      0t0  TCP localhost:commplex-main (LISTEN)
-harshsrivastava@fedora:~/sih/SIH_2026/Backend$ ps -fp 2743 
-UID          PID    PPID  C STIME TTY          TIME CMD
-harshsr+    2743       1  0 Sep11 ?        00:00:06 /usr/lib/systemd/systemd --user
-harshsrivastava@fedora:~/sih/SIH_2026/Backend$ 
-
+  {/* Screening Distribution */}
 
   <div className="rounded-2xl border p-6">
     <div className="mb-5">
