@@ -31,7 +31,7 @@ app.use("/api/v1", screeningRoutes);
 
 app.use(errorMiddleware);
 
-app.listen(PORT, async () => {
+app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Server is running on port ${PORT}`);
 
     
