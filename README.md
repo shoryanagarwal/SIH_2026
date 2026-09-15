@@ -219,42 +219,7 @@ MSE
 RMSE
 
 The primary prediction objective is to minimize the difference between predicted and actual 168-hour values.
-
-System Architecture
-                    ┌─────────────────┐
-                    │    Frontend     │
-                    │   React / TS    │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │  Node.js API    │
-                    │    Backend      │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │  TRACE-X AI     │
-                    │  FastAPI Service│
-                    └────────┬────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              ▼              ▼              ▼
-        Isolation       Drift Engine       LSTM
-         Forest                              │
-              │              │              │
-              └──────────────┼──────────────┘
-                             ▼
-                    ┌─────────────────┐
-                    │   Risk Engine   │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │ Screening Result│
-                    │ PASS / REVIEW / │
-                    │ EARLY REJECT    │
-                    └─────────────────┘
+                 
 End-to-End Workflow
 User uploads burn-in component data.
 Frontend sends the data to the Node.js backend.
